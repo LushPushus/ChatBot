@@ -2,6 +2,7 @@ from aiogram import Router, F
 from aiogram.filters import Command, CommandObject
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from html import escape
+from random import choice
 from time import perf_counter
 
 OWNER_ID = 8379711632
@@ -16,6 +17,19 @@ EMOJI_5 = '<tg-emoji emoji-id="5769357000949375342">🤩</tg-emoji>'
 EMOJI_6 = '<tg-emoji emoji-id="5803158835950527182">🤩</tg-emoji>'
 EMOJI_7 = ''
 EMOJI_8 = ''
+
+RANDOM_TRIGGERS = {
+    "бот, привет": [
+        "Привет! Как дела?",
+        "Привет! Рад тебя видеть.",
+        "Слушаю тебя!",
+    ],
+    "панда лучше": [
+        "Ну, ты фактишь",
+        "Факт",
+        "Фактишь по полной",
+    ],
+}
 
 def get_main_inline_keyboard():
     keyboard = InlineKeyboardMarkup(
@@ -44,7 +58,7 @@ async def start(message: Message):
 
 @router.message(Command("help"))
 async def help(message: Message):
-    await message.answer(f"{EMOJI_1} Команды:\n/start -- Запустить бота\n/help -- Список команд\n/ping -- Проверить пинг и состояние бота\n/sendto -- Отправить сообщение в чат (только для владельца)\n/about -- Про бота\n/owner -- Проверка на то, являешься ли ты моим создателем\n/game -- Игры (в разработке)\n/contact -- Связь с создателем",
+    await message.answer(f"{EMOJI_1} Команды:\n/start -- Запустить бота\n/help -- Список команд\n/ping -- Проверить пинг и состояние бота\n/sendto -- Отправить сообщение в чат (только для владельца)\n/about -- Про бота\n/owner -- Проверка на то, являешься ли ты моим создателем\n/game -- Игры (в разработке)\n/contact -- Связь с создателем\n/ping -- Тестовая команда (для тестирования пинга и работы бота)\n/sendto -- Отправить сообщение в чат (только для владельца)",
         parse_mode="HTML")
 
 @router.message(Command("ping"))
@@ -147,7 +161,15 @@ async def contact(message: Message):
 
 @router.message(Command("test"))
 async def test(message: Message):
-    await message.answer("это тест комманда. она ещё в разработке (она предназначена для тестирования пинга и работы бота) вообщем она не нужна для обычных пользователей XD",
+    await message.answer("Эта комманда не работает, используй /ping для проверки пинга и состояния бота",
                          reply_markup=get_main_inline_keyboard())
+
+@router.message(F.text)
+async def random_trigger(message: Message):
+    trigger = message.text.strip().lower()
+    responses = RANDOM_TRIGGERS.get(trigger)
+
+    if responses:
+        await message.answer(choice(responses))
 
 
