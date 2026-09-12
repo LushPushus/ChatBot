@@ -6,11 +6,13 @@ from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 from aiohttp import web
 from handlers.routes import router
+from handlers.games import games_router
 
 load_dotenv()
 TOKEN = "8691809880:AAFoxraKjZ1F1kqWGB9apajR4i8JPq_GEh4"
 
 dp = Dispatcher()
+dp.include_router(games_router)
 dp.include_router(router)
 
 # Специальная функция-заглушка для Render
