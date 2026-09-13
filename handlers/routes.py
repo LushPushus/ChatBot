@@ -4,6 +4,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKe
 from html import escape
 from random import choice
 from time import perf_counter
+from chat_settings import get_chat_settings, set_chat_setting
 
 OWNER_ID = 8379711632
 
@@ -58,7 +59,7 @@ async def start(message: Message):
 
 @router.message(Command("help"))
 async def help(message: Message):
-    await message.answer(f"{EMOJI_1} Команды:\n/start -- Запустить бота\n/help -- Список команд\n/ping -- Проверить пинг и состояние бота\n/sendto -- Отправить сообщение в чат (только для владельца)\n/about -- Про бота\n/owner -- Проверка на то, являешься ли ты моим создателем\n/game -- Игры (в разработке)\n/contact -- Связь с создателем\n/ping -- Тестовая команда (для тестирования пинга и работы бота)\n/sendto -- Отправить сообщение в чат (только для владельца)",
+    await message.answer(f"{EMOJI_1} Команды:\n/start -- Запустить бота\n/help -- Список команд\n/ping -- Проверить пинг и состояние бота\n/settings -- Настройки этого чата\n/setsetting -- Изменить настройку (только для администраторов)\n/sendto -- Отправить сообщение в чат (только для владельца)\n/about -- Про бота\n/owner -- Проверка на то, являешься ли ты моим создателем\n/game -- Игры (в разработке)\n/contact -- Связь с создателем\n/ping -- Тестовая команда (для тестирования пинга и работы бота)\n/sendto -- Отправить сообщение в чат (только для владельца)",
         parse_mode="HTML")
 
 @router.message(Command("ping"))
@@ -164,8 +165,57 @@ async def test(message: Message):
     await message.answer("Эта комманда не работает, используй /ping для проверки пинга и состояния бота",
                          reply_markup=get_main_inline_keyboard())
 
+async def is_chat_admin(message: Message) -> bool:
+    if message.chat.type == "private":
+        return True
+
+    member = await message.bot.get_chat_member(
+        chat_id=message.chat.id,
+        user_id=message.from_user.id,
+    )
+    return member.status in {"creator", "administrator"}
+
+@router.message(Command("settings"))
+async def settings(message: Message):
+    chat_settings = get_chat_settings(message.chat.id)
+    triggers_status = "включены" if chat_settings["triggers"] else "выключены"
+    await message.answer(
+        "Настройки этого чата:\n"
+        f"Случайные триггеры: {triggers_status}\n\n"
+        "Изменить: /setsetting triggers on или /setsetting triggers off"
+    )
+
+@router.message(Command("setsetting"))
+async def set_setting(message: Message, command: CommandObject):
+    if not await is_chat_admin(message):
+        await message.answer("Изменять настройки могут только администраторы чата.")
+        return
+
+    if not command.args:
+        await message.answer(
+            "Формат: /setsetting triggers on\n"
+            "Или: /setsetting triggers off"
+        )
+        return
+
+    parts = command.args.lower().split()
+    if len(parts) != 2 or parts[0] != "triggers" or parts[1] not in {"on", "off"}:
+        await message.answer(
+            "Доступная настройка: triggers\n"
+            "Пример: /setsetting triggers on"
+        )
+        return
+
+    enabled = parts[1] == "on"
+    set_chat_setting(message.chat.id, "triggers", enabled)
+    status = "включены" if enabled else "выключены"
+    await message.answer(f"Случайные триггеры {status} в этом чате.")
+
 @router.message(F.text)
 async def random_trigger(message: Message):
+    if not get_chat_settings(message.chat.id)["triggers"]:
+        return
+
     trigger = message.text.strip().lower()
     responses = RANDOM_TRIGGERS.get(trigger)
 
